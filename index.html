@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>観察みくじ（仮）</title>
+<meta name="description" content="今の状態にいちばん近いものを選ぶと、観察の問いが一枚出ます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #eef1f3;
+  --card: #fbfcfc;
+  --ink: #23282d;
+  --muted: #5d6670;
+  --accent: #3f5a7a;
+  --line: #c9d1d8;
+  --rest: #6b5a4e;
+  --rest-bg: #f3eee9;
+  --font-display: "Klee One", "Hiragino Mincho ProN", serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #171b1f;
+    --card: #20262b;
+    --ink: #e6eaee;
+    --muted: #9aa5af;
+    --accent: #9db7d6;
+    --line: #36404a;
+    --rest: #d9c3b2;
+    --rest-bg: #29231f;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.8;
+  font-size: 16px;
+}
+.wrap {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 28px 18px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+header { display: flex; flex-direction: column; gap: 6px; }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.7rem;
+  margin: 0;
+  letter-spacing: 0.04em;
+  text-wrap: balance;
+}
+.lead { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.draft {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choices button {
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.choices button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.choices button { word-break: keep-all; overflow-wrap: anywhere; }
+.choices button.wide { grid-column: 1 / -1; }
+.choices button.omakase { grid-column: 1 / -1; text-align: center; color: var(--accent); }
+.choices button.rest-btn {
+  grid-column: 1 / -1;
+  background: var(--rest-bg);
+  color: var(--rest);
+  border-color: transparent;
+  text-align: center;
+  font-size: 0.9rem;
+}
+button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 22px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.card-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.8rem; color: var(--muted); position: relative; }
+.chip { color: var(--accent); }
+.num { font-variant-numeric: tabular-nums; font-family: var(--font-display); }
+.art {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 8px;
+  overflow: hidden;
+}
+.art.has-img { border-style: solid; padding: 0; }
+.art img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.card h2 {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.4rem;
+  margin: 0;
+  text-wrap: balance;
+}
+.prompt { position: relative; margin: 0; font-family: var(--font-display); font-size: 1.08rem; line-height: 1.9; }
+.end { position: relative; margin: 0; font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+.again {
+  position: relative;
+  align-self: center;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+.rest {
+  background: var(--rest-bg);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rest h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0; color: var(--rest); }
+.rest p { margin: 0; }
+.rest ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.rest li { display: flex; flex-direction: column; }
+.rest .tel { font-variant-numeric: tabular-nums; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.04em; }
+.rest small { color: var(--muted); }
+.notice { color: var(--muted); font-size: 0.9rem; margin: 0; }
+.more { display: flex; flex-direction: column; gap: 4px; font-size: 0.92rem; }
+.more a { color: var(--accent); }
+footer { font-size: 0.78rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .card.flip { animation: flip 0.35s ease-out; }
+  @keyframes flip { from { opacity: 0.25; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="draft">試作 v0.2</span>
+    <h1>観察みくじ（仮）</h1>
+    <p class="lead">今の状態にいちばん近いものを選ぶと、観察の問いが一枚出ます。答えは書かなくても、誰にも見せなくてもいいです。</p>
+  </header>
+
+  <!-- 状態のボタンは cards.txt の［ ］から自動で作られます -->
+  <nav class="choices" id="choices" aria-label="今の状態を選ぶ"></nav>
+
+  <p class="notice" id="loading">カードを読み込んでいます…</p>
+
+  <article class="card" id="card" aria-live="polite" hidden>
+    <div class="card-meta"><span class="chip" id="cardState"></span><span class="num" id="cardNum"></span></div>
+    <div class="art" id="cardArt"></div>
+    <h2 id="cardTitle"></h2>
+    <p class="prompt" id="cardPrompt"></p>
+    <p class="end">理由や原因は探さなくていいです。やめたくなったら、そこで終わり。</p>
+    <button type="button" class="again" id="again">もう一枚引く</button>
+  </article>
+
+  <!-- 安全のための枠。カードの編集とは別に、ここはHTMLに固定しています -->
+  <section class="rest" id="rest" hidden aria-live="polite">
+    <h2>観察はお休みする枠です</h2>
+    <p>しんどさが強いときに、自分の内側を見る作業は向きません。ここでは問いを出しません。</p>
+    <p>話せる場所があります。</p>
+    <ul>
+      <li><span>こころの健康相談統一ダイヤル</span><a class="tel" href="tel:0570064556">0570-064-556</a><small>かけた場所の公的な相談窓口につながります</small></li>
+      <li><span>#いのちSOS</span><a class="tel" href="tel:0120061338">0120-061-338</a><small>フリーダイヤル</small></li>
+      <li><span>ほかの電話・SNS相談の一覧（厚生労働省「まもろうよ こころ」）</span><a href="https://www.mhlw.go.jp/mamorouyokokoro/">www.mhlw.go.jp/mamorouyokokoro/</a></li>
+    </ul>
+    <small>受付時間は窓口ごとに違います。つながらないときは、一覧から別の窓口を選んでください。</small>
+    <button type="button" class="again" id="back">状態を選び直す</button>
+  </section>
+
+  <section class="more">
+    <span>もっと続けたい人へ</span>
+    <a href="https://note.com/uchutune3131/n/n037e87b1a9be">身体の反応を観察するツール（note）</a>
+  </section>
+
+  <footer>
+    <span>これは診断や治療ではありません。</span>
+    <span>このページは、選んだものや引いたカードを、どこにも記録・送信しません。</span>
+  </footer>
+</div>
+
+<script>
+// ---- cards.txt を読んでカードにする ----
+function parseCards(text) {
+  const states = [];   // { key, label }
+  const cards = [];    // { k, t, p, n }
+  let cur = null;
+  text.split(/\r?\n/).forEach(raw => {
+    const line = raw.trim();
+    if (!line || line.startsWith("#") || line.startsWith("＃")) return;
+    const head = line.match(/^[\[［](.+?)[\]］]$/);
+    if (head) {
+      cur = { key: "s" + states.length, label: head[1].trim() };
+      states.push(cur);
+      return;
+    }
+    if (!cur) return; // 状態より前に書かれた行は無視
+    const m = line.match(/^(.*?)[｜|](.*)$/);
+    const t = m ? m[1].trim() : "";
+    const p = m ? m[2].trim() : line;
+    cards.push({ k: cur.key, t, p, n: cards.length + 1 });
+  });
+  return { states: states.filter(s => cards.some(c => c.k === s.key)), cards };
+}
+
+const $ = id => document.getElementById(id);
+const card = $("card"), rest = $("rest"), choices = $("choices");
+let STATES = [], ALL = [], LABEL = {};
+let current = "omakase";
+let lastN = 0;
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function setArt(n) {
+  const art = $("cardArt");
+  art.classList.remove("has-img");
+  art.textContent = "";
+  const exts = ["png", "jpg", "jpeg", "webp"];
+  let i = 0;
+  const img = new Image();
+  img.alt = "";
+  img.onload = () => { art.textContent = ""; art.appendChild(img); art.classList.add("has-img"); };
+  img.onerror = () => {
+    i++;
+    if (i < exts.length) img.src = "images/" + pad(n) + "." + exts[i];
+    else art.innerHTML = "絵が入る場所<br>（images/" + pad(n) + ".png を置くと出ます）";
+  };
+  img.src = "images/" + pad(n) + "." + exts[0];
+}
+
+function pick(state) {
+  const pool = state === "omakase" ? ALL : ALL.filter(c => c.k === state);
+  let c, guard = 0;
+  do { c = pool[Math.floor(Math.random() * pool.length)]; guard++; }
+  while (pool.length > 1 && c.n === lastN && guard < 10);
+  lastN = c.n;
+  return c;
+}
+
+function press(state) {
+  choices.querySelectorAll("button").forEach(b => {
+    b.setAttribute("aria-pressed", String(b.dataset.state === state));
+  });
+}
+
+function show(state) {
+  current = state;
+  press(state);
+  if (state === "rest") {
+    card.hidden = true;
+    rest.hidden = false;
+    return;
+  }
+  rest.hidden = true;
+  card.hidden = false;
+  const c = pick(state);
+  $("cardState").textContent = state === "omakase" ? "おまかせ ・ " + LABEL[c.k] : LABEL[c.k];
+  $("cardNum").textContent = "No." + pad(c.n);
+  $("cardTitle").textContent = c.t;
+  $("cardTitle").hidden = !c.t;
+  $("cardPrompt").textContent = c.p;
+  setArt(c.n);
+  card.classList.remove("flip");
+  void card.offsetWidth;
+  card.classList.add("flip");
+}
+
+function addButton(label, state, cls) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.dataset.state = state;
+  b.setAttribute("aria-pressed", "false");
+  if (cls) b.className = cls;
+  b.textContent = label;
+  b.addEventListener("click", () => show(state));
+  choices.appendChild(b);
+}
+
+function build() {
+  choices.textContent = "";
+  STATES.forEach((s, i) => {
+    const lastOdd = STATES.length % 2 === 1 && i === STATES.length - 1;
+    addButton(s.label, s.key, lastOdd ? "wide" : "");
+  });
+  if (ALL.length) addButton("おまかせで一枚引く", "omakase", "omakase");
+  addButton("今はそれどころじゃない。しんどい", "rest", "rest-btn");
+}
+
+$("again").addEventListener("click", () => show(current));
+$("back").addEventListener("click", () => {
+  rest.hidden = true;
+  card.hidden = true;
+  press("");
+  const first = choices.querySelector("button");
+  if (first) first.focus();
+});
+
+fetch("cards.txt", { cache: "no-cache" })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(text => {
+    const data = parseCards(text);
+    STATES = data.states;
+    ALL = data.cards;
+    STATES.forEach(s => { LABEL[s.key] = s.label.replace(/[\s　]+/g, ""); });
+    if (!ALL.length) throw new Error("empty");
+    $("loading").hidden = true;
+    build();
+    show("omakase");
+  })
+  .catch(() => {
+    $("loading").textContent = "カードを読み込めませんでした。少し時間をおいて開き直してください。";
+    build();
+  });
+</script>
+</body>
+</html>
